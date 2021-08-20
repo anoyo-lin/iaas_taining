@@ -14,4 +14,7 @@ cat "/app/data/ip2city.sql" | ${mysql_command} "${DB_NAME}"
 if [ $? -ne 0 ]; then
   echo "Failed to Do database migration"
   exit 4
+else
+  touch migration_done
+  sleep 60
 fi

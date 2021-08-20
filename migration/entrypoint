@@ -1,5 +1,7 @@
 #!/bin/bash 
 
+if [ -f /app/migration_done ]; then rm /app/migration_done; fi
+
 echo "Trying to connect to ${DB_HOST} ..."
 while ! mysql -h${DB_HOST} -u${DB_USER} -p${DB_PASSWORD} -e "show databases;" 1>/dev/null
 do

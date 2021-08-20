@@ -1,0 +1,169 @@
+apiVersion: v1
+data:
+  DB_HOST: ZGV2b3BzLWpvaS1kYg==
+  DB_NAME: ZGV2b3Bz
+  DB_PASSWORD: SGVhck1lUm9hciE=
+  DB_ROOT_PASSWORD: QXNIaWdoYXNIb25vcg==
+  DB_USER: aWFtbm9vbmU=
+kind: Secret
+metadata:
+  name: db-info
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-joi
+spec:
+  ports:
+  - nodePort: 32100
+    port: 80
+    protocol: TCP
+  selector:
+    app: devops-joi
+  type: NodePort
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-joi-db
+spec:
+  ports:
+  - port: 3306
+    protocol: TCP
+  selector:
+    app: devops-joi-db
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: devops-joi
+  name: devops-joi
+spec:
+  progressDeadlineSeconds: 60
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devops-joi
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: devops-joi
+    spec:
+      containers:
+      - env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              key: DB_HOST
+              name: db-info
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              key: DB_NAME
+              name: db-info
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              key: DB_USER
+              name: db-info
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: DB_PASSWORD
+              name: db-info
+        image: k8s.test.io:30002/library/joidevops/app:3714724
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /diagnostic/liveness
+            port: 80
+            scheme: HTTP
+        name: devops-joi-app
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /diagnostic/readiness
+            port: 80
+            scheme: HTTP
+      initContainers:
+      - env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              key: DB_HOST
+              name: db-info
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              key: DB_NAME
+              name: db-info
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              key: DB_USER
+              name: db-info
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: DB_PASSWORD
+              name: db-info
+        image: k8s.test.io:30002/library/joidevops/app:3714724
+        imagePullPolicy: Always
+        name: devops-joi-migration
+      restartPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: devops-joi-db
+  name: devops-joi-db
+spec:
+  progressDeadlineSeconds: 60
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devops-joi-db
+  template:
+    metadata:
+      labels:
+        app: devops-joi-db
+    spec:
+      containers:
+      - env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: DB_ROOT_PASSWORD
+              name: db-info
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              key: DB_NAME
+              name: db-info
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              key: DB_USER
+              name: db-info
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: DB_PASSWORD
+              name: db-info
+        image: mysql:8
+        imagePullPolicy: Always
+        name: devops-joi-db
+        ports:
+        - containerPort: 3306
+          protocol: TCP
+      restartPolicy: Always

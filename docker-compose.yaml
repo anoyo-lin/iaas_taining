@@ -4,28 +4,45 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
+      args:
+        - GIT_HASH=$GIT_HASH
+        - TAG_TIME=$TAG_TIME
+    image: ${ALICR_PREFIX}/${REPO_NAMESPACE}/${APP_NAME}:${GIT_HASH}
     ports:
       - "80:80"
     env_file:
       - ./config/env/local
     # volumes:
     #   - "./app/src:/app/src"
+    networks:
+      - backend
     depends_on:
-      - db
-      - migration
+      migration:
+        condition: service_healthy
+      db:
+        condition: service_healthy
 
   migration:
     build:
       context: ./migration
       dockerfile: Dockerfile
+    image: ${ALICR_PREFIX}/${REPO_NAMESPACE}/${MIGRATION_NAME}:${GIT_HASH}
     networks:
       - backend
     env_file:
       - ./config/env/local
     volumes:
       - "./migration:/app"
+    command: ["./wait-for-it.sh", "db:3306", "--", "/bin/bash -c", "/app/run"]
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/migration_done"]
+      timeout: 10s
+      interval: 10s
+      retries: 10
+
 
   db:
     image: "mysql:8"
@@ -36,6 +53,11 @@ services:
       - "3306:3306"
     env_file:
       - ./config/env/local
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      timeout: 10s
+      interval: 10s
+      retries: 10
 
 networks:
   backend:

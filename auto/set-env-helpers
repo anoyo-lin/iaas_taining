@@ -1,13 +1,16 @@
 #!/bin/bash -e
+set -x
 
-REPO_NAMESPACE="joidevops"
-APP_NAME="app"
-MIGRATION_NAME="migration"
-GIT_HASH=$(git rev-parse --short HEAD)
-TAG_TIME=$(date +'%Y%m%d%H%M')
+export REPO_NAMESPACE="joidevops"
+export APP_NAME="app"
+export MIGRATION_NAME="migration"
+export GIT_HASH=$(git rev-parse --short HEAD)
+export TAG_TIME=$(date +'%Y%m%d%H%M')
 PROJECT_NAME=${PROJECT_NAME:-joi}
 KUBE_CONFILE="./config/kube-config.txt"
-ALICR_PREFIX="registry.cn-hongkong.aliyuncs.com"
+#ALICR_PREFIX="registry.cn-hongkong.aliyuncs.com"
+export ALICR_PREFIX="k8s.test.io:30002/library"
+PWD="D:\\cygwin64\\home\\Gene\\interview-test"
 
 display_status() {
   echo ">>> $1 <<<" 1>&2
@@ -15,7 +18,7 @@ display_status() {
 
 function terraform() {
 
-  [[ ! -f ./tmp/env ]] && echo > ./tmp/.env
+  [[ ! -f ${CONF_DIR}/tmp/.env ]] && echo > ${CONF_DIR}/tmp/.env
 
   docker run --rm \
   -v ${PWD}:/working \
@@ -24,7 +27,7 @@ function terraform() {
   -e AWS_SECRET_ACCESS_KEY \
   -e AWS_SESSION_TOKEN \
   -e AWS_DEFAULT_REGION \
-  --env-file ./tmp/.env \
+  --env-file ${CONF_DIR}/tmp/.env \
   hashicorp/terraform $@
 }
 

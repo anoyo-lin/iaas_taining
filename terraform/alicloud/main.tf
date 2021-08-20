@@ -12,12 +12,13 @@ provider "alicloud" {
 # Data
 #===============================================================================
 data "alicloud_zones" "default" {
+  available_instance_type = "ecs.t6-c1m2.large"
+  available_disk_category     = "cloud_efficiency"
   available_resource_creation = "VSwitch"
+  multi = "false"
 }
-
 data "alicloud_images" "images" {
-  most_recent = true
-  name_regex  = "^centos_7_*"
+  name_regex  = "^centos_7_9_x64"
 }
 
 
@@ -28,6 +29,9 @@ resource "alicloud_security_group" "sg" {
   name        = var.project_name
   description = var.project_name
   vpc_id      = alicloud_vpc.vpc.id
+  depends_on = [
+    alicloud_vpc.vpc
+  ]
 }
 
 resource "alicloud_vswitch" "vswitch" {
@@ -35,6 +39,9 @@ resource "alicloud_vswitch" "vswitch" {
   cidr_block        = "172.16.1.0/24"
   availability_zone = data.alicloud_zones.default.zones[0].id
   vpc_id            = alicloud_vpc.vpc.id
+  depends_on = [
+    alicloud_vpc.vpc
+  ]
 }
 
 resource "alicloud_vpc" "vpc" {
@@ -51,6 +58,9 @@ resource "alicloud_security_group_rule" "allow_all_tcp" {
   priority          = 1
   security_group_id = alicloud_security_group.sg.id
   cidr_ip           = "0.0.0.0/0"
+  depends_on = [
+    alicloud_security_group.sg
+  ] 
 }
 
 resource "alicloud_key_pair" "publickey" {
@@ -60,9 +70,9 @@ resource "alicloud_key_pair" "publickey" {
 
 
 resource "alicloud_instance" "instance" {
-  availability_zone          = "cn-beijing-a"
-  security_groups            = alicloud_security_group.sg.*.id
-  instance_type              = "ecs.n4.large"
+  availability_zone          = data.alicloud_zones.default.zones[0].id
+  security_groups            = alicloud_security_group.sg[*].id
+  instance_type              = "ecs.t6-c1m2.large"
   system_disk_category       = "cloud_efficiency"
   system_disk_name           = "test_foo_system_disk_name"
   system_disk_description    = "test_foo_system_disk_description"

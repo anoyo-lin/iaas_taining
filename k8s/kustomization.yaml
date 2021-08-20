@@ -4,3 +4,10 @@ resources:
 - deployment.yaml
 - service.yaml
 - secret.yaml
+images:
+- name: joidevops/app
+  newName: k8s.test.io:30002/library/joidevops/app
+  newTag: "3714724"
+- name: joidevops/migration
+  newName: k8s.test.io:30002/library/joidevops/migration
+  newTag: "3714724"
